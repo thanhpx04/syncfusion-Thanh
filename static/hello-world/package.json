@@ -6,6 +6,8 @@
   "dependencies": {
     "@atlaskit/css-reset": "^6.0.1",
     "@forge/bridge": "^2.5.0",
+    "@syncfusion/ej2-base": "^20.3.56",
+    "@syncfusion/ej2-react-buttons": "^20.3.58",
     "@syncfusion/ej2-react-treegrid": "^20.3.61",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"

@@ -1,13 +1,15 @@
 import { requestJira } from "@forge/bridge"
 
 const data = async (projects, linkType, issueKey) => {
-    let listProject = projects.map(element => JSON.stringify(element.key))
-    const params = issueKey === "" ? `project in (${listProject}) AND (filter != ${linkType.id})` : `project in (${listProject}) AND (filter != ${linkType.id}) AND issue =${issueKey}`;
+    // let listProject = projects.map(element => JSON.stringify(element.key))
+    // const params = issueKey === "" ? `project in (${listProject}) AND (filter != ${linkType.id})` : `project in (${listProject}) AND (filter != ${linkType.id}) AND issue =${issueKey}`;
+    const params = issueKey === "" ? `project = ${projects} AND (filter != ${linkType.id})` : `project = ${projects} AND (filter != ${linkType.id}) AND issue =${issueKey}`;
     const response = await requestJira(`/rest/api/2/search?jql=${params}`);
     return await response.json();
 };
 
 const issueData = async (projects, linkType, issueKey) => {
+    console.log("call API");
     const result = await data(projects, linkType, issueKey);
     if (result.errorMessages) {
         return {
@@ -36,8 +38,9 @@ const issueData = async (projects, linkType, issueKey) => {
 }
 
 export const findChildByJql = async (projects, linkType, issue) => {
-    let listProject = projects.map(element => JSON.stringify(element.key))
-    let jqlFindChildByID = `project in (${listProject}) and issue in linkedIssues("${issue.key}", ${linkType.outward})`
+    // let listProject = projects.map(element => JSON.stringify(element.key))
+    // let jqlFindChildByID = `project in (${listProject}) and issue in linkedIssues("${issue.key}", ${linkType.outward})`
+    let jqlFindChildByID = `project = ${projects} and issue in linkedIssues("${issue.key}", ${linkType.outward})`
     let url = `/rest/api/2/search?jql=${jqlFindChildByID}`
     const response = await requestJira(url);
     const data = await response.json();
