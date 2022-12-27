@@ -23,7 +23,7 @@ export const issueData = async (projects, linkType, issueKey) => {
             summary: element.fields.summary,
             assignee: element.fields.assignee ? element.fields.assignee.displayName : null,
             status: element.fields.status.name,
-            storyPoint: element.fields.customfield_10033, // depend on customfield was definded
+            storyPoint: element.fields.customfield_10028, // depend on customfield was definded
             issueType: element.fields.issuetype.name,
             isParent: false
         }
@@ -54,7 +54,7 @@ export const findChildByJql = async (projects, linkType, issue) => {
             summary: element.fields.summary,
             assignee: element.fields.assignee ? element.fields.assignee.displayName : null,
             status: element.fields.status.name,
-            storyPoint: element.fields.customfield_10033, // depend on customfield was definded
+            storyPoint: element.fields.customfield_10028, // depend on customfield was definded
             issueType: element.fields.issuetype.name
         }
         // find children of an item to set property for displaying expand icon
