@@ -8,33 +8,35 @@ const data = async (projects, linkType, issueKey) => {
     return await response.json();
 };
 
-const issueData = async (projects, linkType, issueKey) => {
-    console.log("call API");
+export const issueData = async (projects, linkType, issueKey) => {
     const result = await data(projects, linkType, issueKey);
     if (result.errorMessages) {
         return {
             error: result.errorMessages
         };
     }
-    let childIssues = [];
+    let issues = [];
     await Promise.all(result.issues.map(async (element) => {
         let item = {
             id: element.id,
             key: element.key,
             summary: element.fields.summary,
             assignee: element.fields.assignee ? element.fields.assignee.displayName : null,
-            status: {
-                text: element.fields.status.name
-            },
-            storyPoint: element.fields.customfield_10033,
-            issueType: element.fields.issuetype.name
+            status: element.fields.status.name,
+            storyPoint: element.fields.customfield_10033, // depend on customfield was definded
+            issueType: element.fields.issuetype.name,
+            isParent: false
         }
-
+        // find children of an item to set property for displaying expand icon
         let children = await findChildByJql(projects, linkType, item);
-        item.childIssues = children;
-        childIssues.push(item)
+        item.isParent = children.length > 0;
+
+        issues.push(item)
     }))
-    return childIssues.sort((a, b) => b.id - a.id);
+    issues.sort((a, b) => b.id - a.id);
+    return {
+        result: issues // using dataSource need to put array in result
+    };
 }
 
 export const findChildByJql = async (projects, linkType, issue) => {
@@ -45,38 +47,21 @@ export const findChildByJql = async (projects, linkType, issue) => {
     const response = await requestJira(url);
     const data = await response.json();
     let listChildren = []
-    await data.issues.forEach(element => {
+    await Promise.all(data.issues.map(async (element) => {
         let item = {
             id: element.id,
             key: element.key,
             summary: element.fields.summary,
             assignee: element.fields.assignee ? element.fields.assignee.displayName : null,
-            status: {
-                text: element.fields.status.name
-            },
-            storyPoint: element.fields.customfield_10033,
+            status: element.fields.status.name,
+            storyPoint: element.fields.customfield_10033, // depend on customfield was definded
             issueType: element.fields.issuetype.name
         }
+        // find children of an item to set property for displaying expand icon
+        let children = await findChildByJql(projects, linkType, item);
+        item.isParent = children.length > 0;
+
         listChildren.push(item);
-    })
+    }))
     return listChildren;
 }
-
-export const loadChild = async (source, parentKey, childIssues) => {
-    source.forEach((element) => {
-        if (element.key === parentKey) {
-            element.childIssues = childIssues;
-            return source;
-        }
-        if (element.childIssues !== undefined) {
-            loadChild(element.childIssues, parentKey, childIssues);
-        }
-    });
-};
-
-const getIssueLinks = async (issueKey) => {
-    const response = await requestJira(`/rest/api/3/issue/${issueKey}?fields=issuelinks`);
-    const data = await response.json()
-    return await data.fields.issuelinks
-}
-export default issueData;

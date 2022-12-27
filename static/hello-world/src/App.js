@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { TreeGridComponent, ColumnsDirective, ColumnDirective } from "@syncfusion/ej2-react-treegrid";
+import { TreeGridComponent, ColumnsDirective, ColumnDirective, DataStateChangeEventArgs } from "@syncfusion/ej2-react-treegrid";
 import { ButtonComponent } from '@syncfusion/ej2-react-buttons';
-import issueData, { findChildByJql, loadChild } from "./data/fetchData";
+import { issueData, findChildByJql } from "./data/fetchData";
 import './App.css';
 
 function App() {
-  const [dataSource, setDataSource] = useState([]);
+  const [dataSource, setDataSource] = useState(null);
   let projects = "TEST";
   let issueLinkType = {
     id: "10008",
@@ -21,38 +21,22 @@ function App() {
     treegridIssue && treegridIssue.hideSpinner(); // hide the spinner  
     setDataSource(value);
   };
-  
-  const onExpandingChange = (event) => {
-    console.log("Expanding");
-    if(event.data){
-      treegridIssue && treegridIssue.showSpinner(); // show the spinner 
-      let issueParent = event.data;
-      Promise.all(
-        issueParent.childIssues.map(async (child) => {
-          let childOfChild = await findChildByJql(
-            projects,
-            issueLinkType,
-            child
-          );
-          await loadChild(dataSource, child.key, childOfChild);
-        })
-      ).then(() => {
-        treegridIssue && treegridIssue.hideSpinner(); // hide the spinner 
-        setDataSource(dataSource);
-        console.log(dataSource);
-        // setExpanded(
-        //   event.value
-        //     ? expanded.filter((id) => id !== event.dataItem.id)
-        //     : [...expanded, event.dataItem.id]
-        // );
-      }); 
 
+  const handleExpand = async (dataState) => {
+    treegridIssue && treegridIssue.showSpinner(); // show the spinner
+    const data = await findChildByJql(projects, issueLinkType, dataState.data);
+    treegridIssue && treegridIssue.hideSpinner(); // hide the spinner  
+    return data;
+  }
+
+  const handleDataStateChange = (dataState) => {
+    if (dataState.requestType === 'expand') {
+      handleExpand(dataState).then((childData) => {
+        dataState.childData = childData;
+        dataState.childDataBind();
+      });
     }
   }
-  
-  const onExpandedChange = (event) => {
-    console.log("Expanded");
-  };
 
   return (
     <div>
@@ -64,11 +48,12 @@ function App() {
           <TreeGridComponent
             ref={g => treegridIssue = g}
             dataSource={dataSource}
+            dataStateChange={handleDataStateChange}
             treeColumnIndex={0}
             enableCollapseAll="true"
-            childMapping="childIssues"
-            expanding={onExpandingChange}
-            expanded={onExpandedChange}
+            idMapping='key'
+            parentIdMapping="ParentItem"
+            hasChildMapping="isParent"
           >
             <ColumnsDirective>
               <ColumnDirective
