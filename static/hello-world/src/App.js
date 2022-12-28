@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TreeGridComponent, ColumnsDirective, ColumnDirective, DataStateChangeEventArgs } from "@syncfusion/ej2-react-treegrid";
+import { TreeGridComponent, ColumnsDirective, ColumnDirective, DataStateChangeEventArgs, Selection, RowDD, Inject } from "@syncfusion/ej2-react-treegrid";
 import { ButtonComponent } from '@syncfusion/ej2-react-buttons';
 import { issueData, findChildByJql } from "./data/fetchData";
 import './App.css';
@@ -16,10 +16,12 @@ function App() {
   let treegridIssue;
 
   const handleClickSearch = async () => {
-    treegridIssue && treegridIssue.showSpinner(); // show the spinner
-    let value = await issueData(projects, issueLinkType, "");
-    treegridIssue && treegridIssue.hideSpinner(); // hide the spinner  
-    setDataSource(value);
+    if(treegridIssue) {
+      treegridIssue.showSpinner(); // show the spinner
+      let value = await issueData(projects, issueLinkType, "");
+      treegridIssue.hideSpinner(); // hide the spinner  
+      setDataSource(value);
+    }
   };
 
   const handleExpand = async (dataState) => {
@@ -30,12 +32,27 @@ function App() {
   }
 
   const handleDataStateChange = (dataState) => {
+    console.log(dataState);
     if (dataState.requestType === 'expand') {
       handleExpand(dataState).then((childData) => {
         dataState.childData = childData;
         dataState.childDataBind();
       });
+    } else {
+      console.log("else");
+      issueData(projects, issueLinkType, "").then((data) => {
+        treegridIssue && setDataSource(data);
+      });
     }
+  }
+
+  const handleRowDrop = (rowDragEventArgs) => {
+    // console.log(rowDragEventArgs);
+    // let currentViewRecords = treegridIssue.getCurrentViewRecords();
+    // let target = currentViewRecords[rowDragEventArgs.dropIndex];
+    // console.log(currentViewRecords);
+    // console.log(target);
+      console.log("handleRowDrop");
   }
 
   return (
@@ -54,6 +71,9 @@ function App() {
             idMapping='key'
             parentIdMapping="ParentItem"
             hasChildMapping="isParent"
+            allowRowDragAndDrop={true}
+            childMapping="childIssues"
+            rowDrop={handleRowDrop}
           >
             <ColumnsDirective>
               <ColumnDirective
@@ -77,6 +97,7 @@ function App() {
                 headerText="Story Point"
               ></ColumnDirective>
             </ColumnsDirective>
+            <Inject services={[RowDD, Selection]} />
           </TreeGridComponent>
         </div>
       </div>

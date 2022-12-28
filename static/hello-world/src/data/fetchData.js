@@ -30,6 +30,7 @@ export const issueData = async (projects, linkType, issueKey) => {
         // find children of an item to set property for displaying expand icon
         let children = await findChildByJql(projects, linkType, item);
         item.isParent = children.length > 0;
+        item.childIssues = children;
 
         issues.push(item)
     }))
@@ -60,6 +61,7 @@ export const findChildByJql = async (projects, linkType, issue) => {
         // find children of an item to set property for displaying expand icon
         let children = await findChildByJql(projects, linkType, item);
         item.isParent = children.length > 0;
+        // item.childIssues = children;
 
         listChildren.push(item);
     }))
