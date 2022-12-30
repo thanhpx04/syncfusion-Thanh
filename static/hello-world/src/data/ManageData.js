@@ -8,7 +8,7 @@ const data = async (projects, linkType, issueKey) => {
     return await response.json();
 };
 
-export const issueData = async (projects, linkType, issueKey) => {
+export const getIssueData = async (projects, linkType, issueKey) => {
     const result = await data(projects, linkType, issueKey);
     if (result.errorMessages) {
         return {
@@ -25,7 +25,7 @@ export const issueData = async (projects, linkType, issueKey) => {
             status: element.fields.status.name,
             storyPoint: element.fields.customfield_10028, // depend on customfield was definded
             issueType: element.fields.issuetype.name,
-            isParent: false
+            parentId: null // level 1 items
         }
         // find children of an item to set property for displaying expand icon
         let children = await findChildByJql(projects, linkType, item);
@@ -56,7 +56,8 @@ export const findChildByJql = async (projects, linkType, issue) => {
             assignee: element.fields.assignee ? element.fields.assignee.displayName : null,
             status: element.fields.status.name,
             storyPoint: element.fields.customfield_10028, // depend on customfield was definded
-            issueType: element.fields.issuetype.name
+            issueType: element.fields.issuetype.name,
+            parentId: issue.id
         }
         // find children of an item to set property for displaying expand icon
         let children = await findChildByJql(projects, linkType, item);
@@ -66,4 +67,59 @@ export const findChildByJql = async (projects, linkType, issue) => {
         listChildren.push(item);
     }))
     return listChildren;
+}
+
+
+const deleteIssueLink = async (issueLinkID) => {
+    const response = await requestJira(`/rest/api/2/issueLink/${issueLinkID}`, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+    });
+    console.log(`Response: ${response.status} ${response.statusText}`);
+    console.log(await response.text());
+
+}
+
+const linkNewIssue = async (outwardKey, inwardKey, issueLinkType) => {
+    let body = {
+        "outwardIssue": {
+            "key": outwardKey
+        },
+        "inwardIssue": {
+            "key": inwardKey
+        },
+        "type": {
+            "name": issueLinkType.name
+        }
+    }
+    const response = await requestJira(`/rest/api/2/issueLink`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+    console.log(`Response: ${response.status} ${response.statusText}`);
+    console.log(await response.text());
+}
+
+export const updateIssueLink = async (newParentKey, oldParentID, childKey, issueLinkType) => {
+    if (oldParentID !== null) {
+        const response = await requestJira(`/rest/api/2/issue/${childKey}?fields=issuelinks`);
+        const data = await response.json()
+        const oldIssueLinksChild = await data.fields.issuelinks
+        const oldIssueLink = await oldIssueLinksChild.find(
+            element =>
+            (element.inwardIssue !== undefined &&
+                element.type.id === issueLinkType.id &&
+                element.inwardIssue.id === oldParentID));
+        //delete old issue link
+        deleteIssueLink(oldIssueLink.id)
+    }
+    //add new link issue
+    linkNewIssue(childKey, newParentKey, issueLinkType)
 }
